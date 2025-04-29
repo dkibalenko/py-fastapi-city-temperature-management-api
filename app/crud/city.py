@@ -1,7 +1,7 @@
 from sqlalchemy import select, insert
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
-from app import models, schemas
+import models, schemas
 
 
 async def create_city(db: AsyncSession, city: schemas.CityCreate):
