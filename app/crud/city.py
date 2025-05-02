@@ -1,4 +1,4 @@
-from sqlalchemy import select, insert
+from sqlalchemy import select, insert, update
 from sqlalchemy.ext.asyncio.session import AsyncSession
 from fastapi import HTTPException
 
@@ -27,8 +27,8 @@ async def get_all_cities(db: AsyncSession) -> list[schemas.City]:
 
 async def get_single_city(db: AsyncSession, city_id: int) -> schemas.City:
     query = select(models.City).where(models.City.id == city_id)
-    db_city = await db.execute(query)
-    city = db_city.scalar()
+    result = await db.execute(query)
+    city = result.scalar()
 
     if not city:
         raise HTTPException(
@@ -37,3 +37,36 @@ async def get_single_city(db: AsyncSession, city_id: int) -> schemas.City:
         )
 
     return schemas.City.model_validate(city)
+
+
+async def update_city(
+        db: AsyncSession,
+        city_id: int,
+        city: schemas.CityUpdate
+) -> schemas.City:
+    # query = select(models.City).where(models.City.id == city_id)
+    # result = await db.execute(query)
+    # city_being_updated = result.scalar()
+    city_being_updated = await db.get(entity=models.City, ident=city_id)  # efficient for retrieving single objects by primary key.
+
+    if not city_being_updated:
+        raise HTTPException(
+            status_code=404,
+            detail=f"City with id {city_id} not found."
+        )
+
+    update_data = city.model_dump(exclude_unset=True)  # exclude_unset: Whether to exclude fields that have not been explicitly set.
+
+    # for key, value in update_data.items():
+    #     setattr(city_being_updated, key, value)
+    update_query = (
+        update(models.City)
+        .where(models.City.id == city_id)
+        .values(**update_data)
+    )
+
+    await db.execute(update_query)
+    await db.commit()
+    await db.refresh(city_being_updated)
+
+    return city_being_updated
