@@ -14,6 +14,10 @@ class CityUpdate(CityBase):
     pass
 
 
+class CityDelete(BaseModel):
+    message: str
+
+
 class City(CityBase):
     id: int
 
