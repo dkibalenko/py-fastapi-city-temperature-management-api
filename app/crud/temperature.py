@@ -2,12 +2,12 @@ from datetime import datetime
 import pdb
 
 from sqlalchemy.ext.asyncio.session import AsyncSession
-from sqlalchemy import insert, update, select
+from sqlalchemy import select
 from fastapi import HTTPException
 
 from services.weather_fetcher import read_temperature_api
 import schemas, models
-from utils import create_city_temperature_records
+import utils
 
 
 async def update_temperatures(db: AsyncSession) -> schemas.TemperatureUpdate:
@@ -19,15 +19,14 @@ async def update_temperatures(db: AsyncSession) -> schemas.TemperatureUpdate:
 
     temperature_api_data = await read_temperature_api(cities=db_city_objects)
 
-    new_temperature_records = create_city_temperature_records(
+    new_temperature_records = utils.create_city_temperature_records(
         temperature_api_data
     )
 
     db_temperature_records = await db.execute(select(models.Temperature))
     db_temperature_city_ids = {
         temperature_record[0].city_id: temperature_record[0].id
-        for temperature_record
-        in db_temperature_records.fetchall()
+        for temperature_record in db_temperature_records.fetchall()
     }
 
     new_records = [
@@ -37,13 +36,11 @@ async def update_temperatures(db: AsyncSession) -> schemas.TemperatureUpdate:
     ]
 
     if new_records:
-        insert_query = insert(models.Temperature).returning(models.Temperature)
-        try:
-            await db.execute(insert_query, new_records)
-            await db.commit()
-        except Exception as e:
-            await db.rollback
-            print(f"Error inserting temperatures: {e}")
+        insert_result = await utils.insert_new_temperature_records(
+            db=db,
+            new_records=new_records
+        )
+        utils.logger.info(insert_result)
 
     existing_records = [
         {
@@ -56,13 +53,12 @@ async def update_temperatures(db: AsyncSession) -> schemas.TemperatureUpdate:
     ]
 
     if existing_records:
-        try:
-            await db.execute(update(models.Temperature), existing_records)
-            await db.commit()
-        except Exception as e:
-            await db.rollback()
-            print(f"Error updating temperatures: {e}")
+        update_result = await utils.update_existing_temperature_records(
+            db=db,
+            existing_records=existing_records
+        )
+        utils.logger.info(update_result)
 
     return schemas.TemperatureUpdate(
-        message="Temperatures for all cities updated."
+        message="Temperatures for cities updated."
     )
