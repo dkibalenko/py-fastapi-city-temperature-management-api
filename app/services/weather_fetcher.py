@@ -2,6 +2,7 @@ from typing import List
 import httpx
 
 import models
+import utils
 
 
 OPEN_WEATHER_URL = "https://api.openweathermap.org/data/2.5/weather"
@@ -24,15 +25,15 @@ async def read_temperature_api(cities: List[models.City]):
                 )
                 resp.raise_for_status()
             except httpx.HTTPError as e:
-                print(f"HTTP error: {e}")
-                print(f"City not found: {city.name}")
+                utils.logger.error(f"HTTP error: {e}")
+                utils.logger.error(f"City not found: {city.name}")
                 continue
             except httpx.TimeoutException:
-                print("Timeout error")
+                utils.logger.error("Timeout error")
             except httpx.ConnectError:
-                print("Connection error")
+                utils.logger.error("Connection error")
             except httpx.ReadError:
-                print("Read error")
+                utils.logger.error("Read error")
 
             city_temperature = resp.json()["main"]["temp"]
             temperatures[city.id] = city_temperature
