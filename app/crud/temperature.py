@@ -93,15 +93,24 @@ async def update_temperatures(db: AsyncSession) -> schemas.TemperatureUpdate:
     )
 
 
-async def get_all_temperatures(db: AsyncSession) -> List[models.Temperature]:
+async def get_all_temperatures(
+    db: AsyncSession,
+    city_id: int | None = None
+) -> List[models.Temperature]:
     """
-    Retrieves all temperature records from the database, including
-    their associated city data.
+    Retrieves all temperature records from the database,
+    including their associated city data.
+    If a city_id is provided, only the temperature records for that city
+    are returned.
     """
     query = (
         select(models.Temperature)
         .options(selectinload(models.Temperature.city))
     )
+
+    if city_id is not None:
+        query = query.filter(models.Temperature.city_id == city_id)
+
     temperature_list = await db.execute(query)
 
     return [
@@ -115,6 +124,10 @@ async def read_single_temperature_record(
     db: AsyncSession,
     temp_id: int
 ) -> models.Temperature:
+    """
+    Retrieves a single temperature record by its ID from the database, 
+    including its associated city data.
+    """
     temperature_record = await db.get(
         entity=models.Temperature,
         ident=temp_id,
