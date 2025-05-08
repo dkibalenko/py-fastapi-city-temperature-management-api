@@ -21,7 +21,8 @@ async def get_all_cities(db: AsyncSession) -> list[schemas.City]:
     query = select(models.City)
     city_list = await db.execute(query)
     return [
-        schemas.City.model_validate(city[0]) for city in city_list.fetchall()
+        schemas.City.model_validate(city)
+        for city in city_list.scalars().all()
     ]
 
 
