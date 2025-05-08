@@ -123,12 +123,10 @@ async def read_single_temperature_record(
     db: AsyncSession,
     temp_id: int
 ) -> models.Temperature:
-    query = (
-        select(models.Temperature)
-        .options(selectinload(models.Temperature.city))
-        .where(models.Temperature.id == temp_id)
+    temperature_record = await db.get(
+        entity=models.Temperature,
+        ident=temp_id,
+        options=(selectinload(models.Temperature.city),)
     )
-    result = await db.execute(query)
-    temperature = result.scalar()
 
-    return temperature
+    return temperature_record
