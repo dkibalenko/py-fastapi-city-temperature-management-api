@@ -93,30 +93,22 @@ async def update_temperatures(db: AsyncSession) -> schemas.TemperatureUpdate:
     )
 
 
-async def get_all_temperatures(db: AsyncSession) -> List[schemas.Temperature]:
+async def get_all_temperatures(db: AsyncSession) -> List[models.Temperature]:
     """
-    Retrieves a list of all temperature records from the database.
-
-    The function constructs a query to get all temperature records from the
-    database, and then validates each record using pydantic.
+    Retrieves all temperature records from the database, including
+    their associated city data.
     """
     query = (
         select(models.Temperature)
         .options(selectinload(models.Temperature.city))
     )
     temperature_list = await db.execute(query)
-    temperatures = []
-    for temperature in temperature_list.scalars().all():
-        try:
-            obj = schemas.Temperature.model_validate(temperature)
-        except ValidationError as exc:
-            utils.logger.error(
-                f"Error during validation {temperature} object, details: {exc}"
-            )
-            continue
-        temperatures.append(obj)
 
-    return temperatures
+    return [
+        temperature
+        for temperature 
+        in temperature_list.scalars().all()
+    ]
 
 
 async def read_single_temperature_record(
