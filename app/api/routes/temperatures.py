@@ -1,3 +1,4 @@
+from typing import List
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
@@ -12,3 +13,8 @@ router = APIRouter()
 @router.post("/temperatures/update/", response_model=schemas.TemperatureUpdate)
 async def update_cities_temperatures(db: AsyncSession = Depends(get_db)):
     return await crud_temperature.update_temperatures(db=db)
+
+
+@router.get("/temperatures/", response_model=List[schemas.Temperature])
+async def read_temperatures(db: AsyncSession = Depends(get_db)):
+    return await crud_temperature.get_all_temperatures(db=db)
