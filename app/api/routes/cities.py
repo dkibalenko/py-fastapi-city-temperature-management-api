@@ -41,10 +41,18 @@ async def read_cities(db: AsyncSession = Depends(get_db)):
 
 @router.get("/cities/{city_id}/", response_model=schemas.City)
 async def read_single_city(commons: CommonsDep):
-    return await crud_city.get_single_city(
+    city = await crud_city.get_single_city(
         db=commons["db"],
         city_id=commons["city_id"]
     )
+
+    if not city:
+        raise HTTPException(
+            status_code=404,
+            detail=f"City with id {commons["city_id"]} not found."
+        )
+
+    return city
 
 
 @router.put("/cities/{city_id}/", response_model=schemas.City)
