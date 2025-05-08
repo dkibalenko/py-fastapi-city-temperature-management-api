@@ -2,6 +2,7 @@ from datetime import datetime
 import pdb
 from typing import List
 
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio.session import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -116,3 +117,18 @@ async def get_all_temperatures(db: AsyncSession) -> List[schemas.Temperature]:
         temperatures.append(obj)
 
     return temperatures
+
+
+async def read_single_temperature_record(
+    db: AsyncSession,
+    temp_id: int
+) -> models.Temperature:
+    query = (
+        select(models.Temperature)
+        .options(selectinload(models.Temperature.city))
+        .where(models.Temperature.id == temp_id)
+    )
+    result = await db.execute(query)
+    temperature = result.scalar()
+
+    return temperature
