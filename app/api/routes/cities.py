@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
 from dependecies import get_db
@@ -28,7 +28,15 @@ async def create_city(
 
 @router.get("/cities/", response_model=list[schemas.City])
 async def read_cities(db: AsyncSession = Depends(get_db)):
-    return await crud_city.get_all_cities(db=db)
+    cities = await crud_city.get_all_cities(db=db)
+
+    if not cities:
+        raise HTTPException(
+            status_code=404,
+            detail="No cities found."
+        )
+
+    return cities
 
 
 @router.get("/cities/{city_id}/", response_model=schemas.City)
