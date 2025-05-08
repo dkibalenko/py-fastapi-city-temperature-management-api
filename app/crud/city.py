@@ -17,27 +17,16 @@ async def create_city(db: AsyncSession, city: schemas.CityCreate) -> dict:
     return resp
 
 
-async def get_all_cities(db: AsyncSession) -> list[schemas.City]:
-    query = select(models.City)
-    city_list = await db.execute(query)
-    return [
-        schemas.City.model_validate(city)
-        for city in city_list.scalars().all()
-    ]
+async def get_all_cities(db: AsyncSession) -> list[models.City]:
+    result = await db.execute(select(models.City))
+    return result.scalars().all()
 
 
-async def get_single_city(db: AsyncSession, city_id: int) -> schemas.City:
+async def get_single_city(db: AsyncSession, city_id: int) -> models.City:
     query = select(models.City).where(models.City.id == city_id)
     result = await db.execute(query)
-    city = result.scalar()
+    return result.scalar()
 
-    if not city:
-        raise HTTPException(
-            status_code=404,
-            detail=f"City with id {city_id} not found."
-        )
-
-    return schemas.City.model_validate(city)
 
 
 async def update_city(
