@@ -1,38 +1,66 @@
 from datetime import datetime
 import pdb
+from typing import List
 
 from sqlalchemy.ext.asyncio.session import AsyncSession
 from sqlalchemy import select
-from fastapi import HTTPException
+from sqlalchemy.orm import selectinload
+from pydantic import ValidationError
 
 from services.weather_fetcher import read_temperature_api
 import schemas, models
 import utils
 
 
-async def update_temperatures(db: AsyncSession) -> schemas.TemperatureUpdate:
+async def construct_temperature_records(db: AsyncSession) -> List[dict]:
+    """
+    Construct a list of temperature records for cities from the database.
+    """
     db_city_records = await db.execute(select(models.City))
     db_city_objects = [
-        city_record[0]
-        for city_record in db_city_records.fetchall()
+        city_record
+        for city_record
+        in db_city_records.scalars().all()
     ]
 
     temperature_api_data = await read_temperature_api(cities=db_city_objects)
 
-    new_temperature_records = utils.create_city_temperature_records(
+    return utils.create_city_temperature_records(
         temperature_api_data
     )
 
+
+async def map_temperature_city_id_to_temperature_id(
+        db: AsyncSession
+) -> dict[models.Temperature.city_id: models.Temperature.id]:
+    """
+    Maps temperature city_id to its corresponding temperature id.
+    """
     db_temperature_records = await db.execute(select(models.Temperature))
-    db_temperature_city_ids = {
-        temperature_record[0].city_id: temperature_record[0].id
-        for temperature_record in db_temperature_records.fetchall()
+    return {
+        temperature_record.city_id: temperature_record.id
+        for temperature_record in db_temperature_records.scalars().all()
     }
 
+
+async def update_temperatures(db: AsyncSession) -> schemas.TemperatureUpdate:
+    """
+    Updates temperature records for cities in the database.
+
+    This function constructs temperature records for all cities, inserts new 
+    temperature records for cities not already in the database, and updates 
+    existing records with the latest temperature data.
+    """
+
+    temperature_records = await construct_temperature_records(db=db)
+    db_temperature_city_ids = await map_temperature_city_id_to_temperature_id(
+        db=db
+    )
+
     new_records = [
-        {**record, "date_time": datetime.now()}
-        for record in new_temperature_records
-        if record["city_id"] not in db_temperature_city_ids
+        {**temperature_record, "date_time": datetime.now()}
+        for temperature_record in temperature_records
+        if temperature_record["city_id"] not in db_temperature_city_ids
     ]
 
     if new_records:
@@ -44,12 +72,12 @@ async def update_temperatures(db: AsyncSession) -> schemas.TemperatureUpdate:
 
     existing_records = [
         {
-            "id": db_temperature_city_ids[record["city_id"]],
+            "id": db_temperature_city_ids[temperature_record["city_id"]],
             "date_time": datetime.now(),
-            "temperature": record["temperature"]
+            "temperature": temperature_record["temperature"]
         }
-        for record in new_temperature_records
-        if record["city_id"] in db_temperature_city_ids
+        for temperature_record in temperature_records
+        if temperature_record["city_id"] in db_temperature_city_ids
     ]
 
     if existing_records:
