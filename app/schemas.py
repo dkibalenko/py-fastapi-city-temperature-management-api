@@ -29,16 +29,15 @@ class City(CityBase):
 class TemperatureBase(BaseModel):
     date_time: datetime
     temperature: float
-    city_id: int
 
 
 class TemperatureCreate(TemperatureBase):
-    pass
+    city_id: int
 
 
 class Temperature(TemperatureBase):
     id: int
-    city_id: City
+    city: City
 
     model_config = ConfigDict(from_attributes=True)
 
