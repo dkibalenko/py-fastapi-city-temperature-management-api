@@ -32,7 +32,7 @@ async def update_city(
         db: AsyncSession,
         city_id: int,
         city: schemas.CityUpdate
-) -> schemas.City:
+) -> models.City:
     city_being_updated = await db.get(entity=models.City, ident=city_id)
 
     if not city_being_updated:
