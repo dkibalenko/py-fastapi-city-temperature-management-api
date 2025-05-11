@@ -1,22 +1,35 @@
+import os
 from typing import List
 import httpx
+
+from dotenv import load_dotenv
 
 import models
 import utils
 
 
-OPEN_WEATHER_URL = "https://api.openweathermap.org/data/2.5/weather"
-OPEN_WEATHER_API_KEY = "71770e6cab8b6948bb9da995938060fa"
+load_dotenv(override=True)
 
 
-async def read_temperature_api(cities: List[models.City]):
+async def read_temperature_api(cities: List[models.City]) -> dict[int, float]:
+    OPEN_WEATHER_URL = os.getenv("OPEN_WEATHER_URL")
+    OPEN_WEATHER_API_KEY = os.getenv("OPEN_WEATHER_API_KEY")
+
+    if not OPEN_WEATHER_URL or not OPEN_WEATHER_API_KEY:
+        raise ValueError(
+            (
+                "Environment variables OPEN_WEATHER_API_URL and "
+                "OPEN_WEATHER_API_KEY must be set."
+            )
+        )
+
     temperatures = {}
 
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=10.0) as client:
         for city in cities:
             try:
                 resp = await client.get(
-                    OPEN_WEATHER_URL,
+                    url=OPEN_WEATHER_URL,
                     params={
                         "q": city.name,
                         "appid": OPEN_WEATHER_API_KEY,
@@ -24,18 +37,28 @@ async def read_temperature_api(cities: List[models.City]):
                     }
                 )
                 resp.raise_for_status()
-            except httpx.HTTPError as e:
-                utils.logger.error(f"HTTP error: {e}")
-                utils.logger.error(f"City not found: {city.name}")
-                continue
-            except httpx.TimeoutException:
-                utils.logger.error("Timeout error")
-            except httpx.ConnectError:
-                utils.logger.error("Connection error")
-            except httpx.ReadError:
-                utils.logger.error("Read error")
 
-            city_temperature = resp.json()["main"]["temp"]
-            temperatures[city.id] = city_temperature
+                data = resp.json()
+                if "main" not in data or "temp" not in data["main"]:
+                    utils.logger.error(
+                        f"Unexpected response format for city "
+                        f"'{city.name}' (ID: {city.id}): {exc}"
+                    )
+                    continue
+
+                city_temperature = data["main"]["temp"]
+                temperatures[city.id] = city_temperature
+            except (
+                httpx.HTTPError,
+                httpx.TimeoutException,
+                httpx.ConnectError,
+                httpx.ReadError
+            ) as exc:
+                utils.logger.error(
+                    f"Error fetching data for city '{city.name}' "
+                    f"(ID: {city.id}): {exc}"
+                )
+                continue
+
 
     return temperatures
