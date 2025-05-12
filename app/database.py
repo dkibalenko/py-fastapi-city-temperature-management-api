@@ -3,6 +3,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
 from settings import settings
+from naming import metadata
 
 
 SQLALCHEMY_DATABASE_URL = settings.DATABASE_URL
@@ -19,4 +20,4 @@ SessionLocal = sessionmaker(
     class_=AsyncSession
 )
 
-Base = declarative_base()
+Base = declarative_base(metadata=metadata)
