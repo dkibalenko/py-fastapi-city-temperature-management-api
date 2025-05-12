@@ -42,7 +42,7 @@ async def read_temperature_api(cities: List[models.City]) -> dict[int, float]:
                 if "main" not in data or "temp" not in data["main"]:
                     utils.logger.error(
                         f"Unexpected response format for city "
-                        f"'{city.name}' (ID: {city.id}): {exc}"
+                        f"'{city.name}': {data}"
                     )
                     continue
 
