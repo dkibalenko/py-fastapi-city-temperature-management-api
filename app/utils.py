@@ -11,14 +11,15 @@ def get_logger(name: str) -> logging.Logger:
     """Return a logger object with custom settings."""
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
-    formatter = logging.Formatter(
-        "{asctime} - {levelname} - {message}",
-        style="{",
-        datefmt="%Y-%m-%d %H:%M"
-    )
-    handler = logging.StreamHandler()
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
+    if not logger.handlers:
+        formatter = logging.Formatter(
+            "{asctime} - {levelname} - {message}",
+            style="{",
+            datefmt="%Y-%m-%d %H:%M"
+        )
+        handler = logging.StreamHandler()
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
     return logger
 
 logger = get_logger(__name__)
@@ -56,7 +57,7 @@ async def insert_new_temperature_records(
         await db.execute(insert_query, new_records)
         await db.commit()
     except Exception as e:
-        await db.rollback
+        await db.rollback()
         logger.error(f"Error inserting temperatures: {e}")
         return
 
