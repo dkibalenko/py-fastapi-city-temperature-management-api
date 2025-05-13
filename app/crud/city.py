@@ -5,14 +5,23 @@ from fastapi import HTTPException
 import models, schemas
 
 
-async def create_city(db: AsyncSession, city: schemas.CityCreate) -> dict:
-    query = insert(models.City).values(
+async def create_city(db: AsyncSession, city: schemas.CityCreate) -> models.City:
+    query = (
+        insert(models.City)
+        .values(
         name=city.name,
         additional_info=city.additional_info
+        )
+        .returning(models.City.id)  # Return the ID of the inserted row
     )
-    result = await db.execute(query)
-    await db.commit()
-    resp = {**city.model_dump(), "id": result.lastrowid}
+    try:
+        result = await db.execute(query)
+        new_city_id = result.scalar()  # Fetch the returned ID
+        await db.commit()
+    except Exception as exc:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error creating city: {str(exc)}")
+    resp = {**city.model_dump(), "id": new_city_id}
 
     return resp
 
