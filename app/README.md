@@ -13,7 +13,6 @@ There is env.example file to see how to set environment variables.
 
   ```bash
   git clone https://github.com/dkibalenko/py-fastapi-city-temperature-management-api.git
-  cd py-fastapi-city-temperature-management-api
   python3 -m venv env
   source venv/Scripts/activate
   pip install -r requirements.txt
