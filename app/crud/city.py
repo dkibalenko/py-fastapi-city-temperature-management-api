@@ -6,22 +6,18 @@ import models, schemas
 
 
 async def create_city(db: AsyncSession, city: schemas.CityCreate) -> models.City:
-    query = (
-        insert(models.City)
-        .values(
+    new_city = models.City(
         name=city.name,
         additional_info=city.additional_info
-        )
-        .returning(models.City.id)  # Return the ID of the inserted row
     )
     try:
-        result = await db.execute(query)
-        new_city_id = result.scalar()  # Fetch the returned ID
+        db.add(new_city)
         await db.commit()
+        await db.refresh(new_city)  # Refresh to get the generated ID
     except Exception as exc:
         await db.rollback()
         raise HTTPException(status_code=500, detail=f"Error creating city: {str(exc)}")
-    resp = {**city.model_dump(), "id": new_city_id}
+    resp = {**city.model_dump(), "id": new_city.id}
 
     return resp
 
