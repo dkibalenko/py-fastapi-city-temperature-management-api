@@ -49,7 +49,7 @@ async def read_single_city(commons: CommonsDep):
     if not city:
         raise HTTPException(
             status_code=404,
-            detail=f"City with id {commons["city_id"]} not found."
+            detail=f"City with id {commons['city_id']} not found."
         )
 
     return city
