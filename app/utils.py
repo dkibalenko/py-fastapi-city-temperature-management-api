@@ -59,7 +59,7 @@ async def insert_new_temperature_records(
     except Exception as e:
         await db.rollback()
         logger.error(f"Error inserting temperatures: {e}")
-        return
+        return "Failed to insert temperature records."
 
     return f"New temperatures records for {new_records} created."
 
@@ -82,6 +82,6 @@ async def update_existing_temperature_records(
     except Exception as e:
         await db.rollback()
         logger.error(f"Error updating temperatures: {e}")
-        return
+        return "Failed to update temperature records."
 
     return f"Updated existing temperature records for {existing_records}."
