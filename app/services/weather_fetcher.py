@@ -18,7 +18,7 @@ async def read_temperature_api(cities: List[models.City]) -> dict[int, float]:
     if not OPEN_WEATHER_URL or not OPEN_WEATHER_API_KEY:
         raise ValueError(
             (
-                "Environment variables OPEN_WEATHER_API_URL and "
+                "Environment variables OPEN_WEATHER_URL and "
                 "OPEN_WEATHER_API_KEY must be set."
             )
         )
